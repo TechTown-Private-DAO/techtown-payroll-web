@@ -1,70 +1,78 @@
-# TechTown Payroll Web
+<div align="center">
 
-The frontend for **TechTown Private DAO** — a confidential payroll management system built on Stellar/Soroban. Connect your Freighter wallet to manage employees, run payroll, track treasury balances, and vote on governance proposals — all with zero-knowledge privacy.
+# 🌐 TechTown Payroll — Web
 
-## Overview
+**The confidential payroll dashboard for DAOs on Stellar**
 
-- **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **Wallet:** Stellar Freighter
-- **State Management:** TanStack Query (React Query)
-- **Animations:** Framer Motion
-- **UI Components:** Custom component library (Radix-based)
+![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38BDF8?logo=tailwindcss&logoColor=white)
+![Stellar](https://img.shields.io/badge/Stellar-Freighter-7B61FF?logo=stellar&logoColor=white)
+![TanStack Query](https://img.shields.io/badge/TanStack-Query-FF4154?logo=reactquery&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Features
+</div>
 
-- **Wallet Connect** — Freighter wallet integration with automatic session restore, network switching (mainnet/testnet), and XDR transaction signing
-- **Dashboard** — Live stats: active employees, treasury balance, pending payrolls, open proposals — all fetched in parallel with loading states
-- **Employee Management** — Add employees (with ZK salary commitment), freeze/activate/remove, and browse by department
-- **Payroll** — Create payroll runs by selecting employees and period, approve multi-sig payrolls, execute on-chain, and claim as an employee
-- **Treasury** — Deposit tokens and track real-time balance
-- **Proposals** — Create and approve multi-sig governance proposals
+---
 
-## Project Structure
+## What is this?
+
+TechTown Payroll Web is the frontend for the TechTown Private DAO platform. Connect your **Freighter** wallet to manage employees, run payroll, track your treasury, and vote on governance proposals — all with zero-knowledge privacy on Stellar/Soroban.
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| 🔌 **Wallet Connect** | Freighter integration with auto session restore, network switching, and XDR signing |
+| 📊 **Dashboard** | Live stats — employees, treasury balance, pending payrolls, open proposals |
+| 👥 **Employee Management** | Add employees with ZK salary commitment, freeze/activate/remove |
+| 💸 **Payroll** | Create, approve (multi-sig), execute on-chain, and claim as an employee |
+| 🏦 **Treasury** | Deposit tokens and track real-time balance |
+| 🗳️ **Proposals** | Create and approve multi-sig governance proposals |
+
+---
+
+## 🗂️ Project Structure
 
 ```
-app/
-├── page.tsx                     # Landing page (hero, features, stats, CTA)
-├── layout.tsx                   # Root layout with providers
-├── globals.css                  # Global Tailwind styles
-├── providers.tsx                # TanStack Query + Wallet provider wrapper
-└── dashboard/
-    ├── page.tsx                 # Main dashboard (stats + quick actions)
-    ├── employees/page.tsx       # Employee list and management
-    ├── payroll/
-    │   └── new/page.tsx         # Create new payroll run
-    ├── proposals/page.tsx       # Governance proposals
-    └── treasury/page.tsx        # Treasury balance and deposits
-
-components/
-└── ui/
-    ├── button.tsx
-    ├── card.tsx
-    ├── badge.tsx
-    ├── tabs.tsx
-    ├── toast.tsx
-    ├── toaster.tsx
-    └── use-toast.ts
-
-contexts/
-└── WalletContext.tsx             # Freighter wallet state and helpers
-
-lib/
-├── api.ts                       # Typed API client for all backend endpoints
-├── hooks.ts                     # TanStack Query hooks for all API resources
-└── utils.ts                     # Utility helpers (cn, etc.)
+techtown-payroll-web/
+├── app/
+│   ├── page.tsx                  # Landing page (hero, features, stats, CTA)
+│   ├── layout.tsx                # Root layout with providers
+│   ├── globals.css               # Global Tailwind styles
+│   ├── providers.tsx             # TanStack Query + Wallet provider wrapper
+│   └── dashboard/
+│       ├── page.tsx              # Main dashboard overview
+│       ├── employees/page.tsx    # Employee list and management
+│       ├── payroll/new/page.tsx  # Create a new payroll run
+│       ├── proposals/page.tsx    # Governance proposals
+│       └── treasury/page.tsx    # Treasury balance and deposits
+│
+├── components/
+│   └── ui/                       # Shared UI components (Button, Card, Badge…)
+│
+├── contexts/
+│   └── WalletContext.tsx         # Freighter wallet state and helpers
+│
+└── lib/
+    ├── api.ts                    # Typed API client for all backend endpoints
+    ├── hooks.ts                  # TanStack Query hooks for all resources
+    └── utils.ts                  # Utility helpers (cn, etc.)
 ```
 
-## Getting Started
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- [Freighter wallet extension](https://freighter.app/) installed in your browser
-- The [backend](../techtown-payroll-backend) running locally or accessible via URL
+- **Node.js** 18+
+- **[Freighter](https://freighter.app/)** browser extension installed
+- The **[backend](../techtown-payroll-backend)** running locally or at a known URL
 
-### Environment Variables
+### 1. Configure Environment
 
 Create a `.env.local` file:
 
@@ -72,90 +80,104 @@ Create a `.env.local` file:
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
-### Running Locally
+### 2. Install & Run
 
 ```bash
 npm install
 npm run dev
 ```
 
-The app runs at `http://localhost:3001` by default.
+> App runs at **http://localhost:3001**
 
-### Build for Production
+---
 
-```bash
-npm run build
-npm start
-```
+## 🐳 Docker
 
-### Using Docker
-
+**Standalone:**
 ```bash
 docker build -t techtown-payroll-web .
 docker run -p 3001:3000 -e NEXT_PUBLIC_API_URL=http://localhost:3000 techtown-payroll-web
 ```
 
-### With Docker Compose
-
-From the root `xiaxia/` directory:
-
+**With Docker Compose** (from the root `xiaxia/` directory):
 ```bash
 docker compose up
 ```
 
-## API Integration
+**Build for production:**
+```bash
+npm run build
+npm start
+```
 
-All API calls are centralized in `lib/api.ts` and consumed through typed React Query hooks in `lib/hooks.ts`.
+---
+
+## 🔗 API Integration
+
+All API calls live in `lib/api.ts` and are consumed via typed **TanStack Query** hooks from `lib/hooks.ts`. No raw `fetch` calls in components.
 
 ```ts
-// Example: list employees for a DAO
+// Fetch employees for the current DAO
 const { data: employees, isLoading } = useEmployees(daoId)
 
-// Example: add an employee
+// Add a new employee
 const addEmployee = useAddEmployee(daoId)
 addEmployee.mutate({ wallet_address, department, salary })
 ```
 
-Available hook groups:
+### Available Hooks
 
-| Hook | Description |
-|------|-------------|
-| `useDAO`, `useCreateDAO` | Fetch and create DAOs |
-| `useEmployees`, `useAddEmployee`, `useFreezeEmployee`, `useActivateEmployee`, `useRemoveEmployee` | Employee management |
-| `usePayrolls`, `useCreatePayroll`, `useApprovePayroll`, `useExecutePayroll` | Payroll lifecycle |
-| `useTreasuryBalance`, `useDeposit` | Treasury operations |
-| `useProposals`, `useCreateProposal`, `useApproveProposal` | Governance |
+| Group | Hooks |
+|-------|-------|
+| **DAO** | `useDAO`, `useCreateDAO` |
+| **Employees** | `useEmployees`, `useAddEmployee`, `useFreezeEmployee`, `useActivateEmployee`, `useRemoveEmployee` |
+| **Payroll** | `usePayrolls`, `useCreatePayroll`, `useApprovePayroll`, `useExecutePayroll` |
+| **Treasury** | `useTreasuryBalance`, `useDeposit` |
+| **Proposals** | `useProposals`, `useCreateProposal`, `useApproveProposal` |
 
-## Wallet Integration
+---
 
-The app uses the `@stellar/freighter-api` SDK. The `WalletContext` exposes:
+## 🔌 Wallet Integration
+
+The app uses `@stellar/freighter-api`. The `WalletContext` exposes everything you need:
 
 ```ts
-const { isConnected, address, network, connect, disconnect, switchNetwork, signTx } = useWallet()
+const {
+  isConnected,   // boolean
+  address,       // Stellar public key or null
+  network,       // 'mainnet' | 'testnet'
+  connect,       // () => Promise<void>
+  disconnect,    // () => void
+  switchNetwork, // (n: 'mainnet' | 'testnet') => void
+  signTx,        // (xdr: string) => Promise<string>
+} = useWallet()
 ```
 
-- `connect()` — Prompts Freighter and stores the public key
-- `signTx(xdr)` — Signs a Stellar transaction XDR with the correct network passphrase
-- `switchNetwork('mainnet' | 'testnet')` — Toggles the active Stellar network
-- Session is automatically restored on page load if Freighter is already approved
+- Session is **automatically restored** on page load if Freighter is already approved
+- `signTx` picks the correct network passphrase based on the current network
 
-## DAO Context
+---
 
-After creating a DAO, its ID is stored in `localStorage` under `tt_dao_id`. All dashboard pages read this value to scope their data fetching. The JWT auth token is stored under `tt_token`.
+## 💾 Local Storage Keys
 
-## Development
+| Key | Value |
+|-----|-------|
+| `tt_dao_id` | Active DAO ID (set after DAO creation, used to scope all data fetching) |
+| `tt_token` | JWT auth token |
+
+---
+
+## 🛠️ Development Commands
 
 ```bash
-# Start dev server with hot reload
-npm run dev
-
-# Type check
-npx tsc --noEmit
-
-# Lint
-npm run lint
+npm run dev          # Start dev server with hot reload
+npx tsc --noEmit     # Type check
+npm run lint         # Lint with ESLint
+npm run build        # Production build
 ```
 
-## License
+---
 
-MIT
+## 📄 License
+
+[MIT](./LICENSE)
