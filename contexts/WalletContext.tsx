@@ -1,16 +1,20 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { isConnected, setAllowed } from '@stellar/freighter-api'
-import { toast } from '@/components/ui/use-toast'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import {
+  isConnected as freighterIsConnected,
+  getPublicKey,
+  signTransaction,
+} from '@stellar/freighter-api'
 
 interface WalletContextType {
   isConnected: boolean
   address: string | null
+  network: 'mainnet' | 'testnet'
   connect: () => Promise<void>
   disconnect: () => void
-  network: 'mainnet' | 'testnet'
-  switchNetwork: (network: 'mainnet' | 'testnet') => void
+  switchNetwork: (n: 'mainnet' | 'testnet') => void
+  signTx: (xdr: string) => Promise<string>
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -20,63 +24,63 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [address, setAddress] = useState<string | null>(null)
   const [network, setNetwork] = useState<'mainnet' | 'testnet'>('testnet')
 
-  const connect = async () => {
+  // Re-hydrate on mount (user may have already approved Freighter)
+  useEffect(() => {
+    const restore = async () => {
+      try {
+        const connected = await freighterIsConnected()
+        if (connected) {
+          const pk = await getPublicKey()
+          setAddress(pk)
+          setIsConnected(true)
+        }
+      } catch {
+        // Freighter not installed — silently ignore
+      }
+    }
+    restore()
+  }, [])
+
+  const connect = useCallback(async () => {
     try {
-      // Check if Freighter is installed
-      if (typeof window === 'undefined' || !window.freighter) {
-        toast({
-          title: 'Freighter not found',
-          description: 'Please install the Freighter wallet extension.',
-          variant: 'destructive',
-        })
+      const connected = await freighterIsConnected()
+      if (!connected) {
+        alert('Please install the Freighter wallet extension from https://freighter.app/')
         return
       }
-
-      const response = await window.freighter.getPublicKey()
-      setAddress(response)
+      const pk = await getPublicKey()
+      setAddress(pk)
       setIsConnected(true)
-      
-      toast({
-        title: 'Wallet Connected',
-        description: `Connected to ${response.slice(0, 8)}...${response.slice(-8)}`,
-      })
-    } catch (error) {
-      console.error('Failed to connect wallet:', error)
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to connect wallet. Please try again.',
-        variant: 'destructive',
-      })
+    } catch (err: any) {
+      console.error('Wallet connect failed:', err)
+      alert('Failed to connect wallet. Please try again.')
     }
-  }
+  }, [])
 
-  const disconnect = () => {
-    setIsConnected(false)
+  const disconnect = useCallback(() => {
     setAddress(null)
-    toast({
-      title: 'Wallet Disconnected',
-      description: 'Your wallet has been disconnected.',
-    })
-  }
+    setIsConnected(false)
+  }, [])
 
-  const switchNetwork = (newNetwork: 'mainnet' | 'testnet') => {
-    setNetwork(newNetwork)
-    toast({
-      title: 'Network Switched',
-      description: `Switched to ${newNetwork}`,
-    })
-  }
+  const switchNetwork = useCallback((n: 'mainnet' | 'testnet') => {
+    setNetwork(n)
+  }, [])
+
+  const signTx = useCallback(
+    async (xdr: string) => {
+      const networkPassphrase =
+        network === 'testnet'
+          ? 'Test SDF Network ; September 2015'
+          : 'Public Global Stellar Network ; September 2015'
+      const result = await signTransaction(xdr, { networkPassphrase })
+      return result
+    },
+    [network],
+  )
 
   return (
     <WalletContext.Provider
-      value={{
-        isConnected,
-        address,
-        connect,
-        disconnect,
-        network,
-        switchNetwork,
-      }}
+      value={{ isConnected, address, network, connect, disconnect, switchNetwork, signTx }}
     >
       {children}
     </WalletContext.Provider>
@@ -84,21 +88,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useWallet() {
-  const context = useContext(WalletContext)
-  if (context === undefined) {
-    throw new Error('useWallet must be used within a WalletProvider')
-  }
-  return context
-}
-
-// Add Freighter type declarations
-declare global {
-  interface Window {
-    freighter: {
-      getPublicKey: () => Promise<string>
-      isConnected: () => Promise<boolean>
-      signTransaction: (tx: any, network: string) => Promise<any>
-      signMessage: (message: string, network: string) => Promise<string>
-    }
-  }
+  const ctx = useContext(WalletContext)
+  if (!ctx) throw new Error('useWallet must be used within WalletProvider')
+  return ctx
 }

@@ -1,271 +1,257 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useWallet } from '@/contexts/WalletContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Users, 
-  DollarSign, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle,
-  Plus,
-  Settings,
-  History,
-  Wallet,
-  TrendingUp,
-  BarChart,
+import {
+  Users, DollarSign, Clock, CheckCircle, AlertCircle,
+  Plus, Settings, History, Wallet, TrendingUp, BarChart, Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEmployees, usePayrolls, useTreasuryBalance, useProposals } from '@/lib/hooks'
+
+// The DAO id is stored in localStorage after DAO creation.
+// Fall back to 1 for demo so the page renders something.
+function useCurrentDaoId() {
+  const [daoId, setDaoId] = useState<number | null>(null)
+  useEffect(() => {
+    const stored = localStorage.getItem('tt_dao_id')
+    setDaoId(stored ? Number(stored) : 1)
+  }, [])
+  return daoId
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    completed: 'bg-green-100 text-green-700',
+    executed:  'bg-green-100 text-green-700',
+    approved:  'bg-blue-100 text-blue-700',
+    pending:   'bg-yellow-100 text-yellow-700',
+    active:    'bg-green-100 text-green-700',
+    frozen:    'bg-slate-100 text-slate-600',
+    cancelled: 'bg-red-100 text-red-700',
+    rejected:  'bg-red-100 text-red-700',
+  }
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[status] ?? 'bg-slate-100 text-slate-600'}`}>
+      {status}
+    </span>
+  )
+}
 
 export default function DashboardPage() {
-  const { isConnected, address } = useWallet()
+  const { isConnected, address, disconnect } = useWallet()
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
+  const daoId = useCurrentDaoId()
+
+  const employees  = useEmployees(daoId)
+  const payrolls   = usePayrolls(daoId)
+  const treasury   = useTreasuryBalance(daoId)
+  const proposals  = useProposals(daoId)
 
   useEffect(() => {
-    if (!isConnected) {
-      router.push('/')
-    }
-    setLoading(false)
+    if (!isConnected) router.push('/')
   }, [isConnected, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  if (!isConnected) return null
 
-  if (!isConnected) {
-    return null
-  }
-
-  // Mock data - in production, fetch from API
-  const daoStats = {
-    totalEmployees: 12,
-    totalPaid: '$45,230.00',
-    pendingPayroll: '$12,500.00',
-    upcomingPayroll: '3 days',
-  }
-
-  const recentPayrolls = [
-    { id: 1, date: '2024-01-15', amount: '$12,450.00', status: 'completed' },
-    { id: 2, date: '2024-01-01', amount: '$11,780.00', status: 'completed' },
-    { id: 3, date: '2023-12-15', amount: '$10,000.00', status: 'pending' },
-  ]
-
-  const employees = [
-    { id: 1, name: 'Alice Johnson', department: 'Engineering', status: 'active' },
-    { id: 2, name: 'Bob Smith', department: 'Design', status: 'active' },
-    { id: 3, name: 'Carol White', department: 'Marketing', status: 'frozen' },
-  ]
+  const activeEmployees = employees.data?.filter(e => e.status === 'active').length ?? 0
+  const pendingPayrolls = payrolls.data?.filter(p => p.status === 'pending') ?? []
+  const latestPayrolls  = payrolls.data?.slice(0, 5) ?? []
+  const pendingProps    = proposals.data?.filter(p => p.status === 'active').length ?? 0
+  const balance         = treasury.data?.balance ?? 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Header */}
       <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/" className="text-xl font-bold text-slate-800">
-                TechTown
-              </Link>
-              <Badge variant="secondary">Private DAO</Badge>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-slate-600">
-                <Wallet className="w-4 h-4" />
-                <span className="font-mono">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
-              </div>
-              <Button variant="outline" size="sm">Settings</Button>
-            </div>
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="text-xl font-bold text-slate-800">TechTown</Link>
+            <Badge variant="secondary">Private DAO</Badge>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-mono text-slate-500">
+              {address?.slice(0, 6)}…{address?.slice(-4)}
+            </span>
+            <Button variant="outline" size="sm" onClick={disconnect}>Disconnect</Button>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Grid */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[
-            { icon: Users, label: 'Employees', value: daoStats.totalEmployees, color: 'text-blue-600' },
-            { icon: DollarSign, label: 'Total Paid', value: daoStats.totalPaid, color: 'text-green-600' },
-            { icon: Clock, label: 'Pending Payroll', value: daoStats.pendingPayroll, color: 'text-yellow-600' },
-            { icon: TrendingUp, label: 'Next Payroll', value: daoStats.upcomingPayroll, color: 'text-purple-600' },
-          ].map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">{stat.label}</p>
-                    <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-                  </div>
-                  <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <Card>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Active Employees</p>
+                <p className="text-2xl font-bold">
+                  {employees.isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : activeEmployees}
+                </p>
+              </div>
+              <Users className="w-8 h-8 text-blue-600" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Treasury Balance</p>
+                <p className="text-2xl font-bold">
+                  {treasury.isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : `${balance.toLocaleString()} XLM`}
+                </p>
+              </div>
+              <DollarSign className="w-8 h-8 text-green-600" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Pending Payrolls</p>
+                <p className="text-2xl font-bold">
+                  {payrolls.isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : pendingPayrolls.length}
+                </p>
+              </div>
+              <Clock className="w-8 h-8 text-yellow-600" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Open Proposals</p>
+                <p className="text-2xl font-bold">
+                  {proposals.isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : pendingProps}
+                </p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-purple-600" />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="payroll">
-              <div className="flex items-center justify-between mb-4">
-                <TabsList>
-                  <TabsTrigger value="payroll">Payroll</TabsTrigger>
-                  <TabsTrigger value="employees">Employees</TabsTrigger>
-                  <TabsTrigger value="treasury">Treasury</TabsTrigger>
-                </TabsList>
-                <Button className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  New Payroll
-                </Button>
-              </div>
-
-              <TabsContent value="payroll">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Payrolls</CardTitle>
-                    <CardDescription>View and manage your payroll history</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {recentPayrolls.map((payroll) => (
-                        <div key={payroll.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                          <div>
-                            <p className="font-medium">{payroll.date}</p>
-                            <p className="text-sm text-slate-500">Payroll #{payroll.id}</p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <p className="font-semibold">{payroll.amount}</p>
-                            <Badge 
-                              variant={payroll.status === 'completed' ? 'success' : 'warning'}
-                            >
-                              {payroll.status}
-                            </Badge>
-                            <Button variant="ghost" size="sm">View</Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="employees">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Employees</CardTitle>
-                    <CardDescription>Manage your team members</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {employees.map((employee) => (
-                        <div key={employee.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                          <div>
-                            <p className="font-medium">{employee.name}</p>
-                            <p className="text-sm text-slate-500">{employee.department}</p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <Badge 
-                              variant={employee.status === 'active' ? 'success' : 'secondary'}
-                            >
-                              {employee.status}
-                            </Badge>
-                            <Button variant="ghost" size="sm">View</Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="treasury">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Treasury</CardTitle>
-                    <CardDescription>Manage your DAO treasury</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 rounded-lg">
-                          <p className="text-sm text-slate-500">Total Balance</p>
-                          <p className="text-2xl font-bold">$126,450.00</p>
-                        </div>
-                        <div className="p-4 bg-slate-50 rounded-lg">
-                          <p className="text-sm text-slate-500">Locked</p>
-                          <p className="text-2xl font-bold">$12,500.00</p>
-                        </div>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Recent Payrolls */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Recent Payrolls</CardTitle>
+                  <CardDescription>Last 5 payroll runs</CardDescription>
+                </div>
+                <Link href="/dashboard/payroll/new">
+                  <Button size="sm" className="gap-1"><Plus className="w-4 h-4" />New</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {payrolls.isLoading && <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>}
+                {payrolls.isError && <p className="text-red-500 text-sm">Failed to load payrolls</p>}
+                {!payrolls.isLoading && latestPayrolls.length === 0 && (
+                  <p className="text-slate-500 text-sm py-4 text-center">No payrolls yet</p>
+                )}
+                <div className="space-y-3">
+                  {latestPayrolls.map(p => (
+                    <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-sm">Payroll #{p.id}</p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(p.period).toLocaleDateString()} · {p.employee_count} employees
+                        </p>
                       </div>
-                      <div className="flex gap-4">
-                        <Button className="flex-1">Deposit</Button>
-                        <Button variant="outline" className="flex-1">Withdraw</Button>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-sm">{p.total_amount.toLocaleString()} XLM</span>
+                        <StatusBadge status={p.status} />
+                        <Link href={`/dashboard/payroll/${p.id}`}>
+                          <Button variant="ghost" size="sm">View</Button>
+                        </Link>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Employees Preview */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Team</CardTitle>
+                  <CardDescription>Recent employee activity</CardDescription>
+                </div>
+                <Link href="/dashboard/employees">
+                  <Button variant="outline" size="sm">View All</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {employees.isLoading && <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>}
+                <div className="space-y-3">
+                  {(employees.data ?? []).slice(0, 4).map(emp => (
+                    <div key={emp.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="font-mono text-xs">{emp.wallet_address.slice(0,8)}…{emp.wallet_address.slice(-6)}</p>
+                        <p className="text-xs text-slate-500">{emp.department}</p>
+                      </div>
+                      <StatusBadge status={emp.status} />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column */}
           <div className="space-y-6">
-            {/* Quick Actions */}
             <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full justify-start gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  Run Payroll
-                </Button>
-                <Button className="w-full justify-start gap-2" variant="outline">
-                  <Users className="w-4 h-4" />
-                  Add Employee
-                </Button>
-                <Button className="w-full justify-start gap-2" variant="outline">
-                  <Settings className="w-4 h-4" />
-                  DAO Settings
-                </Button>
-                <Button className="w-full justify-start gap-2" variant="outline">
-                  <BarChart className="w-4 h-4" />
-                  Analytics
-                </Button>
+              <CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                <Link href="/dashboard/payroll/new" className="block">
+                  <Button className="w-full justify-start gap-2">
+                    <DollarSign className="w-4 h-4" />Run Payroll
+                  </Button>
+                </Link>
+                <Link href="/dashboard/employees" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Users className="w-4 h-4" />Manage Employees
+                  </Button>
+                </Link>
+                <Link href="/dashboard/treasury" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Wallet className="w-4 h-4" />Treasury
+                  </Button>
+                </Link>
+                <Link href="/dashboard/proposals" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <CheckCircle className="w-4 h-4" />Proposals
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            {/* Upcoming */}
+            {/* Alerts */}
             <Card>
-              <CardHeader>
-                <CardTitle>Upcoming</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                    <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <CardHeader><CardTitle>Alerts</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {pendingPayrolls.length > 0 && (
+                  <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
                     <div>
-                      <p className="font-medium">Payroll in 3 days</p>
-                      <p className="text-sm text-slate-500">12 employees</p>
+                      <p className="font-medium text-sm">{pendingPayrolls.length} payroll(s) need approval</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                    <CheckCircle className="w-5 h-5 text-blue-600" />
+                )}
+                {pendingProps > 0 && (
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                     <div>
-                      <p className="font-medium">Proposal to review</p>
-                      <p className="text-sm text-slate-500">2 signatures needed</p>
+                      <p className="font-medium text-sm">{pendingProps} proposal(s) awaiting vote</p>
                     </div>
                   </div>
-                </div>
+                )}
+                {pendingPayrolls.length === 0 && pendingProps === 0 && (
+                  <p className="text-slate-500 text-sm text-center py-2">No pending actions</p>
+                )}
               </CardContent>
             </Card>
           </div>
