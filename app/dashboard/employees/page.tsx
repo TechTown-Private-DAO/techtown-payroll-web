@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWallet } from '@/contexts/WalletContext'
+import { useToast } from '@/contexts/ToastContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useEmployees, useAddEmployee, useFreezeEmployee, useActivateEmployee, useRemoveEmployee } from '@/lib/hooks'
@@ -17,6 +18,7 @@ function useCurrentDaoId() {
 
 export default function EmployeesPage() {
   const { isConnected } = useWallet()
+  const { toast } = useToast()
   const router = useRouter()
   const daoId = useCurrentDaoId()
 
@@ -41,7 +43,11 @@ export default function EmployeesPage() {
       await addEmployee.mutateAsync({ ...form, salary: Number(form.salary) })
       setForm({ wallet_address: '', department: '', salary: '' })
       setShowForm(false)
-    } catch (err: any) { setFormError(err.message) }
+      toast.success('Employee added successfully')
+    } catch (err: any) {
+      setFormError(err.message)
+      toast.error(err.message ?? 'Failed to add employee')
+    }
   }
 
   return (
@@ -141,17 +147,32 @@ export default function EmployeesPage() {
                       'bg-red-100 text-red-700'
                     }`}>{emp.status}</span>
                     {emp.status === 'active' && (
-                      <Button variant="ghost" size="sm" onClick={() => freeze.mutate(emp.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        freeze.mutate(emp.id, {
+                          onSuccess: () => toast.success('Employee frozen'),
+                          onError: (err: any) => toast.error(err.message ?? 'Failed to freeze employee'),
+                        })
+                      }}>
                         <UserX className="w-4 h-4" />
                       </Button>
                     )}
                     {emp.status === 'frozen' && (
-                      <Button variant="ghost" size="sm" onClick={() => activate.mutate(emp.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        activate.mutate(emp.id, {
+                          onSuccess: () => toast.success('Employee activated'),
+                          onError: (err: any) => toast.error(err.message ?? 'Failed to activate employee'),
+                        })
+                      }}>
                         <UserCheck className="w-4 h-4" />
                       </Button>
                     )}
                     <Button variant="ghost" size="sm" className="text-red-500" onClick={() => {
-                      if (confirm('Remove this employee?')) remove.mutate(emp.id)
+                      if (confirm('Remove this employee?')) {
+                        remove.mutate(emp.id, {
+                          onSuccess: () => toast.success('Employee removed'),
+                          onError: (err: any) => toast.error(err.message ?? 'Failed to remove employee'),
+                        })
+                      }
                     }}>✕</Button>
                   </div>
                 </div>

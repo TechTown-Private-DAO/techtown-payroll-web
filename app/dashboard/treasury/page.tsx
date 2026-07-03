@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWallet } from '@/contexts/WalletContext'
+import { useToast } from '@/contexts/ToastContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useTreasuryBalance, useDeposit } from '@/lib/hooks'
@@ -20,6 +21,7 @@ function useCurrentDaoId() {
 
 export default function TreasuryPage() {
   const { isConnected, address } = useWallet()
+  const { toast } = useToast()
   const router = useRouter()
   const daoId = useCurrentDaoId()
 
@@ -46,7 +48,11 @@ export default function TreasuryPage() {
       setAmount('')
       setShowDeposit(false)
       balance.refetch()
-    } catch (err: any) { setError(err.message) }
+      toast.success('Deposit recorded successfully')
+    } catch (err: any) {
+      setError(err.message)
+      toast.error(err.message ?? 'Failed to process deposit')
+    }
   }
 
   const bal = balance.data?.balance ?? 0

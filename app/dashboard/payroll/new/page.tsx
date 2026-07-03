@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWallet } from '@/contexts/WalletContext'
+import { useToast } from '@/contexts/ToastContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useEmployees, useCreatePayroll, usePayrolls, useApprovePayroll, useExecutePayroll } from '@/lib/hooks'
@@ -25,6 +26,7 @@ function statusColor(s: string) {
 
 export default function PayrollPage() {
   const { isConnected, address } = useWallet()
+  const { toast } = useToast()
   const router = useRouter()
   const daoId = useCurrentDaoId()
 
@@ -55,7 +57,11 @@ export default function PayrollPage() {
       setStep('list')
       setSelected([])
       setPeriod('')
-    } catch (err: any) { setError(err.message) }
+      toast.success('Payroll created successfully')
+    } catch (err: any) {
+      setError(err.message)
+      toast.error(err.message ?? 'Failed to create payroll')
+    }
   }
 
   const activeEmployees = employees.data?.filter(e => e.status === 'active') ?? []
@@ -104,7 +110,13 @@ export default function PayrollPage() {
                             size="sm"
                             variant="outline"
                             disabled={approve.isPending}
-                            onClick={() => approve.mutate({ payrollId: p.id, approver_address: address })}
+                            onClick={() => approve.mutate(
+                              { payrollId: p.id, approver_address: address },
+                              {
+                                onSuccess: () => toast.success('Payroll approved'),
+                                onError: (err: any) => toast.error(err.message ?? 'Failed to approve payroll'),
+                              },
+                            )}
                           >
                             {approve.isPending ? <Loader2 className="animate-spin w-3 h-3" /> : 'Approve'}
                           </Button>
@@ -113,7 +125,13 @@ export default function PayrollPage() {
                           <Button
                             size="sm"
                             disabled={execute.isPending}
-                            onClick={() => execute.mutate({ payrollId: p.id, executor_address: address })}
+                            onClick={() => execute.mutate(
+                              { payrollId: p.id, executor_address: address },
+                              {
+                                onSuccess: () => toast.success('Payroll executed successfully'),
+                                onError: (err: any) => toast.error(err.message ?? 'Failed to execute payroll'),
+                              },
+                            )}
                           >
                             {execute.isPending ? <Loader2 className="animate-spin w-3 h-3" /> : 'Execute'}
                           </Button>

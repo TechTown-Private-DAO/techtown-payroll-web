@@ -6,6 +6,7 @@ import {
   getPublicKey,
   signTransaction,
 } from '@stellar/freighter-api'
+import { useToast } from '@/contexts/ToastContext'
 
 interface WalletContextType {
   isConnected: boolean
@@ -41,11 +42,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     restore()
   }, [])
 
+  const { toast } = useToast()
+
   const connect = useCallback(async () => {
     try {
       const connected = await freighterIsConnected()
       if (!connected) {
-        alert('Please install the Freighter wallet extension from https://freighter.app/')
+        toast.error('Please install the Freighter wallet extension from https://freighter.app/')
         return
       }
       const pk = await getPublicKey()
@@ -53,9 +56,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(true)
     } catch (err: any) {
       console.error('Wallet connect failed:', err)
-      alert('Failed to connect wallet. Please try again.')
+      toast.error('Failed to connect wallet. Please try again.')
     }
-  }, [])
+  }, [toast])
 
   const disconnect = useCallback(() => {
     setAddress(null)

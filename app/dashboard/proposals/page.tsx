@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWallet } from '@/contexts/WalletContext'
+import { useToast } from '@/contexts/ToastContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useProposals, useCreateProposal, useApproveProposal } from '@/lib/hooks'
@@ -18,6 +19,7 @@ function useCurrentDaoId() {
 
 export default function ProposalsPage() {
   const { isConnected, address } = useWallet()
+  const { toast } = useToast()
   const router = useRouter()
   const daoId = useCurrentDaoId()
 
@@ -44,7 +46,11 @@ export default function ProposalsPage() {
       })
       setForm({ target_address: '', fn_name: '', args: '' })
       setShowForm(false)
-    } catch (err: any) { setFormError(err.message) }
+      toast.success('Proposal submitted successfully')
+    } catch (err: any) {
+      setFormError(err.message)
+      toast.error(err.message ?? 'Failed to create proposal')
+    }
   }
 
   function statusColor(s: string) {
@@ -149,7 +155,13 @@ export default function ProposalsPage() {
                           size="sm"
                           variant="outline"
                           disabled={approveProposal.isPending}
-                          onClick={() => approveProposal.mutate({ proposalId: p.id, approver_address: address })}
+                          onClick={() => approveProposal.mutate(
+                            { proposalId: p.id, approver_address: address },
+                            {
+                              onSuccess: () => toast.success('Vote recorded'),
+                              onError: (err: any) => toast.error(err.message ?? 'Failed to record vote'),
+                            },
+                          )}
                         >
                           <CheckCircle className="w-3 h-3 mr-1" />Vote
                         </Button>

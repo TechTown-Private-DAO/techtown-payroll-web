@@ -20,13 +20,17 @@ ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & { variant?: 'default' | 'destructive' }
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & {
+    variant?: 'default' | 'destructive' | 'success'
+  }
 >(({ className, variant = 'default', ...props }, ref) => (
   <ToastPrimitives.Root
     ref={ref}
     className={cn(
       'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-lg border p-4 shadow-lg transition-all data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-80 data-[state=open]:slide-in-from-bottom-full',
-      variant === 'destructive' ? 'border-red-500 bg-red-600 text-white' : 'border bg-white text-slate-900',
+      variant === 'destructive' && 'border-red-500 bg-red-600 text-white',
+      variant === 'success'     && 'border-green-500 bg-green-600 text-white',
+      variant === 'default'     && 'border bg-white text-slate-900',
       className,
     )}
     {...props}
