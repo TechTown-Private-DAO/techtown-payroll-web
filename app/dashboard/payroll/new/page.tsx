@@ -8,7 +8,7 @@ import { useEmployees, useCreatePayroll, usePayrolls, useApprovePayroll, useExec
 import { DollarSign, Loader2, ArrowLeft, CheckCircle, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { Payroll } from '@/lib/api'
+import type { Payroll, Employee } from '@/lib/api'
 
 function useCurrentDaoId() {
   const [id, setId] = useState<number | null>(null)
@@ -58,7 +58,7 @@ export default function PayrollPage() {
     } catch (err: any) { setError(err.message) }
   }
 
-  const activeEmployees = employees.data?.filter(e => e.status === 'active') ?? []
+  const activeEmployees = employees.data?.filter((e: Employee) => e.status === 'active') ?? []
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -162,7 +162,7 @@ export default function PayrollPage() {
                     <p className="text-slate-500 text-sm">No active employees. <Link href="/dashboard/employees" className="text-blue-600 underline">Add some first.</Link></p>
                   )}
                   <div className="space-y-2">
-                    {activeEmployees.map(emp => (
+                    {activeEmployees.map((emp: Employee) => (
                       <label
                         key={emp.id}
                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border ${

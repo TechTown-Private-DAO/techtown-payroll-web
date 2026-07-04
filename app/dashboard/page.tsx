@@ -12,6 +12,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEmployees, usePayrolls, useTreasuryBalance, useProposals } from '@/lib/hooks'
+import type { Employee, Payroll, Proposal } from '@/lib/api'
 
 // The DAO id is stored in localStorage after DAO creation.
 // Fall back to 1 for demo so the page renders something.
@@ -58,10 +59,10 @@ export default function DashboardPage() {
 
   if (!isConnected) return null
 
-  const activeEmployees = employees.data?.filter(e => e.status === 'active').length ?? 0
-  const pendingPayrolls = payrolls.data?.filter(p => p.status === 'pending') ?? []
+  const activeEmployees = employees.data?.filter((e: Employee) => e.status === 'active').length ?? 0
+  const pendingPayrolls = payrolls.data?.filter((p: Payroll) => p.status === 'pending') ?? []
   const latestPayrolls  = payrolls.data?.slice(0, 5) ?? []
-  const pendingProps    = proposals.data?.filter(p => p.status === 'active').length ?? 0
+  const pendingProps    = proposals.data?.filter((p: Proposal) => p.status === 'active').length ?? 0
   const balance         = treasury.data?.balance ?? 0
 
   return (
@@ -152,7 +153,7 @@ export default function DashboardPage() {
                   <p className="text-slate-500 text-sm py-4 text-center">No payrolls yet</p>
                 )}
                 <div className="space-y-3">
-                  {latestPayrolls.map(p => (
+                  {latestPayrolls.map((p: Payroll) => (
                     <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div>
                         <p className="font-medium text-sm">Payroll #{p.id}</p>
@@ -187,7 +188,7 @@ export default function DashboardPage() {
               <CardContent>
                 {employees.isLoading && <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>}
                 <div className="space-y-3">
-                  {(employees.data ?? []).slice(0, 4).map(emp => (
+                  {(employees.data ?? []).slice(0, 4).map((emp: Employee) => (
                     <div key={emp.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div>
                         <p className="font-mono text-xs">{emp.wallet_address.slice(0,8)}…{emp.wallet_address.slice(-6)}</p>

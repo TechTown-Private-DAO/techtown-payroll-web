@@ -5,6 +5,7 @@ import { useWallet } from '@/contexts/WalletContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useEmployees, useAddEmployee, useFreezeEmployee, useActivateEmployee, useRemoveEmployee } from '@/lib/hooks'
+import type { Employee } from '@/lib/api'
 import { Users, Plus, UserX, UserCheck, Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -123,7 +124,7 @@ export default function EmployeesPage() {
               <p className="text-slate-500 text-sm text-center py-8">No employees yet. Add one above.</p>
             )}
             <div className="space-y-3">
-              {(employees.data ?? []).map(emp => (
+              {(employees.data ?? []).map((emp: Employee) => (
                 <div key={emp.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-lg gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
