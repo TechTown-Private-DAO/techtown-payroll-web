@@ -8,8 +8,23 @@
     margin: 0;
     padding: 0;
   }
+
   body {
     font-family: Inter, sans-serif;
     -webkit-font-smoothing: antialiased;
+    @apply bg-white text-slate-900 transition-colors duration-200;
+  }
+
+  .dark body {
+    @apply bg-slate-950 text-slate-50;
+  }
+
+  /* Smooth scrollbar in dark mode */
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 }
