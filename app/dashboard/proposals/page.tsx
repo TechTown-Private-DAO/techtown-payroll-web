@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '@/contexts/WalletContext'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProposals, useCreateProposal, useApproveProposal } from '@/lib/hooks'
 import { Loader2, ArrowLeft, Plus, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
@@ -48,25 +48,27 @@ export default function ProposalsPage() {
   }
 
   function statusColor(s: string) {
-    if (s === 'executed' || s === 'approved') return 'bg-green-100 text-green-700'
-    if (s === 'active') return 'bg-blue-100 text-blue-700'
-    return 'bg-slate-100 text-slate-600'
+    if (s === 'executed' || s === 'approved') return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+    if (s === 'active') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+    return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <header className="border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center gap-4">
-          <Link href="/dashboard"><ArrowLeft className="w-5 h-5" /></Link>
-          <span className="text-xl font-bold">Governance</span>
+          <Link href="/dashboard">
+            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          </Link>
+          <span className="text-xl font-bold text-slate-800 dark:text-slate-100">Governance</span>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Proposals</h1>
-            <p className="text-slate-500 text-sm">Multisig governance for DAO decisions</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Proposals</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Multisig governance for DAO decisions</p>
           </div>
           <Button onClick={() => setShowForm(v => !v)} className="gap-2">
             <Plus className="w-4 h-4" />New Proposal
@@ -79,18 +81,22 @@ export default function ProposalsPage() {
             <CardContent>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium block mb-1">Target Contract Address</label>
+                  <label className="text-sm font-medium block mb-1 text-slate-700 dark:text-slate-300">
+                    Target Contract Address
+                  </label>
                   <input
-                    className="w-full border rounded-md px-3 py-2 text-sm font-mono"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm font-mono bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="CABC…"
                     value={form.target_address}
                     onChange={e => setForm(f => ({ ...f, target_address: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium block mb-1">Function Name</label>
+                  <label className="text-sm font-medium block mb-1 text-slate-700 dark:text-slate-300">
+                    Function Name
+                  </label>
                   <input
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="execute_payroll"
                     value={form.fn_name}
                     onChange={e => setForm(f => ({ ...f, fn_name: e.target.value }))}
@@ -98,16 +104,18 @@ export default function ProposalsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium block mb-1">Arguments (JSON)</label>
+                  <label className="text-sm font-medium block mb-1 text-slate-700 dark:text-slate-300">
+                    Arguments (JSON)
+                  </label>
                   <textarea
-                    className="w-full border rounded-md px-3 py-2 text-sm font-mono"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm font-mono bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows={3}
                     placeholder='{"payroll_id": 1}'
                     value={form.args}
                     onChange={e => setForm(f => ({ ...f, args: e.target.value }))}
                   />
                 </div>
-                {formError && <p className="text-red-500 text-sm">{formError}</p>}
+                {formError && <p className="text-red-500 dark:text-red-400 text-sm">{formError}</p>}
                 <div className="flex gap-3">
                   <Button type="submit" disabled={create.isPending}>
                     {create.isPending ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : null}
@@ -124,19 +132,23 @@ export default function ProposalsPage() {
           <CardContent className="pt-6">
             {proposals.isLoading && <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>}
             {!proposals.isLoading && (proposals.data?.length ?? 0) === 0 && (
-              <p className="text-slate-500 text-sm text-center py-8">No proposals yet</p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm text-center py-8">No proposals yet</p>
             )}
             <div className="space-y-4">
               {(proposals.data ?? []).map((p: Proposal) => (
-                <div key={p.id} className="p-4 bg-slate-50 rounded-lg">
+                <div key={p.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold">Proposal #{p.id} — {p.function || '(no function)'}</p>
-                      <p className="text-xs font-mono text-slate-500 mt-1">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">
+                        Proposal #{p.id} — {p.function || '(no function)'}
+                      </p>
+                      <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">
                         Target: {p.target_address ? `${p.target_address.slice(0,10)}…` : 'n/a'}
                       </p>
-                      {p.args && <p className="text-xs text-slate-400 mt-1 font-mono">{p.args}</p>}
-                      <p className="text-xs text-slate-400 mt-2">
+                      {p.args && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono">{p.args}</p>
+                      )}
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
                         {p.approvals.length} approval(s) · {new Date(p.created_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -155,7 +167,7 @@ export default function ProposalsPage() {
                         </Button>
                       )}
                       {p.status === 'active' && p.approvals.includes(address) && (
-                        <span className="text-xs text-green-600">✓ Voted</span>
+                        <span className="text-xs text-green-600 dark:text-green-400">✓ Voted</span>
                       )}
                     </div>
                   </div>

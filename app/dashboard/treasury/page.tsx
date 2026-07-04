@@ -52,11 +52,13 @@ export default function TreasuryPage() {
   const bal = balance.data?.balance ?? 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <header className="border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center gap-4">
-          <Link href="/dashboard"><ArrowLeft className="w-5 h-5" /></Link>
-          <span className="text-xl font-bold">Treasury</span>
+          <Link href="/dashboard">
+            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          </Link>
+          <span className="text-xl font-bold text-slate-800 dark:text-slate-100">Treasury</span>
         </div>
       </header>
 
@@ -64,14 +66,16 @@ export default function TreasuryPage() {
         {/* Balance Card */}
         <Card className="mb-6">
           <CardContent className="pt-8 pb-8 text-center">
-            <Wallet className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-            <p className="text-sm text-slate-500 mb-1">Total Balance</p>
+            <Wallet className="w-12 h-12 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Balance</p>
             {balance.isLoading ? (
               <Loader2 className="animate-spin w-6 h-6 mx-auto" />
             ) : (
-              <p className="text-4xl font-bold">{bal.toLocaleString()} <span className="text-slate-400 text-2xl">stroops</span></p>
+              <p className="text-4xl font-bold text-slate-900 dark:text-slate-50">
+                {bal.toLocaleString()} <span className="text-slate-400 dark:text-slate-500 text-2xl">stroops</span>
+              </p>
             )}
-            <p className="text-sm text-slate-400 mt-1">≈ {(bal / 10_000_000).toFixed(2)} XLM</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">≈ {(bal / 10_000_000).toFixed(2)} XLM</p>
           </CardContent>
         </Card>
 
@@ -97,26 +101,30 @@ export default function TreasuryPage() {
             <CardContent>
               <form onSubmit={handleDeposit} className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium block mb-1">Token Address</label>
+                  <label className="text-sm font-medium block mb-1 text-slate-700 dark:text-slate-300">
+                    Token Address
+                  </label>
                   <input
-                    className="w-full border rounded-md px-3 py-2 text-sm font-mono"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm font-mono bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={tokenAddress}
                     onChange={e => setTokenAddress(e.target.value)}
                   />
-                  <p className="text-xs text-slate-400 mt-1">Default: USDC testnet</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Default: USDC testnet</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium block mb-1">Amount (stroops)</label>
+                  <label className="text-sm font-medium block mb-1 text-slate-700 dark:text-slate-300">
+                    Amount (stroops)
+                  </label>
                   <input
                     type="number"
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="10000000 (= 1 XLM)"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     required
                   />
                 </div>
-                {error && <p className="text-red-500 text-sm">{error}</p>}
+                {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
                 <div className="flex gap-3">
                   <Button type="submit" disabled={deposit.isPending}>
                     {deposit.isPending ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : null}
@@ -132,9 +140,15 @@ export default function TreasuryPage() {
         {/* Info */}
         <Card>
           <CardHeader><CardTitle>About Treasury</CardTitle></CardHeader>
-          <CardContent className="text-sm text-slate-600 space-y-2">
+          <CardContent className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
             <p>The treasury holds USDC and XLM on Stellar. Funds are locked per payroll run and released to employees on claim.</p>
-            <p>Withdrawals require multisig approval matching the DAO threshold. Create a proposal on the <Link href="/dashboard/proposals" className="text-blue-600 underline">Proposals</Link> page.</p>
+            <p>
+              Withdrawals require multisig approval matching the DAO threshold. Create a proposal on the{' '}
+              <Link href="/dashboard/proposals" className="text-blue-600 dark:text-blue-400 underline">
+                Proposals
+              </Link>{' '}
+              page.
+            </p>
           </CardContent>
         </Card>
       </div>
