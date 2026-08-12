@@ -481,4 +481,174 @@ Install `@next/bundle-analyzer`. Add an `npm run analyze` script that builds wit
 
 ---
 
+---
+
+## Found in codebase audit (2026-08-12)
+
+---
+
+### #26 — Add employee-facing claim page
+**Labels:** `feature` · `payroll` · `critical`
+**Difficulty:** ⭐⭐ Intermediate
+
+**Description:**
+The backend now has a working `GET /api/daos/:id/payroll/:payroll_id/claim-proof` endpoint (as of 2026-08-12) returning a verified merkle proof + commitment data for an employee's claim. There is no frontend surface for it at all — every dashboard page is admin/DAO-management only, and `payrollApi.claim` has no hook or caller anywhere. (This supersedes the existing #24 — the backend blocker it described is now resolved.)
+
+**Task:**
+Add a page (or section) where a connected wallet that matches an active employee can see their executed-but-unclaimed payrolls and claim. Add a `useClaimProof`/`useClaimPayroll` hook in `lib/hooks.ts` calling the existing `payrollApi.claim` / new claim-proof endpoint.
+
+**Acceptance Criteria:**
+- [ ] Section/page only renders claimable payrolls for the connected wallet
+- [ ] Already-claimed payrolls show as claimed
+- [ ] Successful claim gives clear feedback (see #33 re: toast wiring)
+
+---
+
+### #27 — Fix DAO creation/selection flow
+**Labels:** `bug` · `feature` · `dx`
+**Difficulty:** ⭐⭐ Intermediate
+
+**Description:**
+`tt_dao_id` is read from `localStorage` in every dashboard page but never written anywhere — it silently defaults to `'1'`. `useCreateDAO`/`daoApi.create` exist but are never called from any component.
+
+**Task:**
+Add an onboarding flow (e.g. on the landing page after wallet connect): create a new DAO or select an existing one, writing the result to `tt_dao_id`. Related to the already-tracked #23 (validating a stale `tt_dao_id`) — that issue assumes a DAO was selected in the first place, which currently never happens.
+
+**Acceptance Criteria:**
+- [ ] A first-time connected wallet is prompted to create or select a DAO
+- [ ] `tt_dao_id` is set as a result and dashboard pages load that DAO
+- [ ] Existing `useCreateDAO` hook is actually exercised from the UI
+
+---
+
+### #28 — Wire wallet connect to real login
+**Labels:** `bug` · `security` · `auth`
+**Difficulty:** ⭐⭐ Intermediate
+
+**Description:**
+`WalletContext.connect()` only checks Freighter connection state — it never calls `authApi.login`. No code anywhere writes `tt_token` to `localStorage` (confirmed via repo-wide grep), so every backend request currently goes out with no `Authorization` header.
+
+**Task:**
+After a successful Freighter connect, call `authApi.login` (once the backend's login is real — see techtown-payroll-backend ISSUES.md #27) and store the returned token so `lib/api.ts`'s `request()` picks it up.
+
+**Acceptance Criteria:**
+- [ ] Connecting a wallet results in `tt_token` being set
+- [ ] Subsequent API calls include the `Authorization` header
+- [ ] Disconnect clears the token
+
+---
+
+### #29 — Build real Soroban transaction signing and submission
+**Labels:** `feature` · `wallet` · `help wanted`
+**Difficulty:** ⭐⭐⭐ Advanced
+
+**Description:**
+`useWallet().signTx` exists and correctly wraps Freighter's `signTransaction`, but nothing calls it — every mutation today is a plain REST call to the backend with the wallet address as a string, not a signed on-chain transaction.
+
+**Task:**
+Add `@stellar/stellar-sdk` as a dependency. For actions that should be user-signed on-chain (at minimum: claiming a salary — see #26), build the Soroban contract-invocation XDR client-side, call `signTx`, and submit to the configured RPC. This is a substantial piece of new infrastructure — scope it as its own project, likely paired with the equivalent real-integration work needed in techtown-payroll-backend's `stellar_service.rs`.
+
+**Acceptance Criteria:**
+- [ ] At least one action (recommend: salary claim) builds, signs, and submits a real transaction
+- [ ] Transaction success/failure surfaces to the user (see #33)
+- [ ] Documented pattern other actions can follow
+
+---
+
+### #30 — Add a payroll detail page
+**Labels:** `feature` · `payroll`
+**Difficulty:** ⭐⭐ Intermediate
+
+**Description:**
+The dashboard's payroll "View" links point to `/dashboard/payroll/:id`, which doesn't exist — there's no `[id]` route, only `/dashboard/payroll/new` (which doubles as list + create form).
+
+**Task:**
+Add `app/dashboard/payroll/[id]/page.tsx` showing per-employee breakdown, status, merkle root, and (once #26 lands) claim status per employee.
+
+**Acceptance Criteria:**
+- [ ] Dashboard's "View" link resolves to a real page
+- [ ] Page shows payroll status, total, employee count, and merkle root
+- [ ] Handles a not-found payroll ID gracefully
+
+---
+
+### #31 — Add treasury deposit/withdrawal history and enable Withdraw
+**Labels:** `feature` · `treasury`
+**Difficulty:** ⭐⭐ Intermediate
+
+**Description:**
+The treasury page shows only a live balance — no transaction history — and the "Withdraw" button is permanently disabled with no path to initiate one.
+
+**Task:**
+Add a transaction history list (depends on backend ISSUES.md #24, already tracked there). For withdraw, route through the proposal flow (#32) rather than a direct call, since treasury withdrawals should go through multisig.
+
+**Acceptance Criteria:**
+- [ ] Deposit/withdrawal history is visible on the treasury page
+- [ ] "Withdraw" either creates a proposal or is clearly labeled as requiring one
+
+---
+
+### #32 — Add proposal detail view and execute action
+**Labels:** `feature` · `proposals`
+**Difficulty:** ⭐⭐ Intermediate
+
+**Description:**
+Proposals show raw truncated JSON for `args` with no decoded target/function view, and there's no way to trigger execution once the threshold is met (`proposalApi`/`lib/hooks.ts` only has create/approve).
+
+**Task:**
+Add a proposal detail view decoding `target_address`/`function`/`args` into something readable, and (once the contract side supports real execution — see techtown-payroll-contracts ISSUES.md #27) an execute action.
+
+**Acceptance Criteria:**
+- [ ] Proposal detail shows decoded target/function, not raw JSON
+- [ ] Execute action is available once threshold is met and contract-side execution exists
+
+---
+
+### #33 — Wire the existing toast system into real events
+**Labels:** `ux` · `good first issue`
+**Difficulty:** ⭐ Beginner
+
+**Description:**
+`components/ui/toast.tsx`/`toaster.tsx` are fully built and `Toaster` is mounted in `app/providers.tsx`, but `toast()` is never called anywhere — errors show as inline red text, wallet-connect failures use browser `alert()`. This extends the already-tracked #21 (which assumed the toast system didn't exist yet — it does, it's just unused).
+
+**Task:**
+Replace `alert()` calls in `WalletContext.tsx` and inline error `setError` patterns in dashboard pages with `toast()` calls; add success toasts on mutations that currently give no feedback.
+
+**Acceptance Criteria:**
+- [ ] No `alert()` calls remain
+- [ ] Every mutation (create/approve/execute/freeze/deposit/etc.) shows a success or error toast
+
+---
+
+### #34 — Add testnet/mainnet mismatch warning
+**Labels:** `ux` · `wallet` · `safety`
+**Difficulty:** ⭐ Beginner
+
+**Description:**
+`network` is available from `useWallet()` but nothing checks it against the DAO's expected network, and `switchNetwork` is never called from any UI control — a user could unknowingly act on the wrong network.
+
+**Task:**
+Show a persistent warning banner when the connected wallet's network doesn't match the app's expected network, with a button that calls `switchNetwork`.
+
+**Acceptance Criteria:**
+- [ ] Banner appears on network mismatch
+- [ ] Switch button corrects it without a full reconnect
+
+---
+
+### #35 — Fix broken `/docs` link
+**Labels:** `good first issue` · `bug`
+**Difficulty:** ⭐ Beginner
+
+**Description:**
+The landing page links to `/docs` twice, but no `app/docs` route exists.
+
+**Task:**
+Either add a minimal docs page (linking out to the READMEs) or remove the link until one exists.
+
+**Acceptance Criteria:**
+- [ ] `/docs` resolves to a real page, or the link is removed
+
+---
+
 *Last updated: 2026-07-03 · Maintainers: TechTown-Private-DAO*
