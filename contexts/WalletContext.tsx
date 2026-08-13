@@ -5,7 +5,7 @@ import {
   isConnected as freighterIsConnected,
   getPublicKey,
   signTransaction,
-  signMessage,
+  signBlob,
 } from '@stellar/freighter-api'
 import { authApi } from '@/lib/api'
 import { toast } from '@/components/ui/use-toast'
@@ -66,11 +66,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       // Prove key ownership: sign a one-time server-issued challenge, then
       // exchange the signature for a session token.
       const { message } = await authApi.challenge(pk)
-      const signResult = await signMessage(message, { networkPassphrase: networkPassphrase(network) })
-      // freighter-api's signMessage return shape has varied across versions
-      // (a plain base64 string vs. an object) — handle both defensively.
-      const signedMessage =
-        typeof signResult === 'string' ? signResult : (signResult as { signedMessage: string }).signedMessage
+      const signedMessage = await signBlob(message, { accountToSign: pk })
       const auth = await authApi.login(pk, signedMessage, message)
       localStorage.setItem('tt_token', auth.token)
 
@@ -84,7 +80,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         variant: 'destructive',
       })
     }
-  }, [network])
+  }, [])
 
   const disconnect = useCallback(() => {
     localStorage.removeItem('tt_token')

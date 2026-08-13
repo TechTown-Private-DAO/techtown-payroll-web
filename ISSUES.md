@@ -521,20 +521,20 @@ Add an onboarding flow (e.g. on the landing page after wallet connect): create a
 
 ---
 
-### #28 — Wire wallet connect to real login
+### #28 — Wire wallet connect to real login — ✅ Done (2026-08-13)
 **Labels:** `bug` · `security` · `auth`
 **Difficulty:** ⭐⭐ Intermediate
 
 **Description:**
-`WalletContext.connect()` only checks Freighter connection state — it never calls `authApi.login`. No code anywhere writes `tt_token` to `localStorage` (confirmed via repo-wide grep), so every backend request currently goes out with no `Authorization` header.
+`WalletContext.connect()` only checked Freighter connection state — it never called `authApi.login`. No code anywhere wrote `tt_token` to `localStorage` (confirmed via repo-wide grep), so every backend request went out with no `Authorization` header.
 
-**Task:**
-After a successful Freighter connect, call `authApi.login` (once the backend's login is real — see techtown-payroll-backend ISSUES.md #27) and store the returned token so `lib/api.ts`'s `request()` picks it up.
+**Resolution:**
+`connect()` now calls `authApi.challenge(pk)`, signs the returned message via Freighter's `signBlob` (not `signMessage` — that export doesn't exist in the installed `@stellar/freighter-api@1.7.1`; using it would have thrown at runtime on every connect attempt, only caught once `npx tsc --noEmit` could actually run against installed types), and exchanges the signature for a JWT via `authApi.login`, storing it as `tt_token`. `disconnect()` clears it. Matches the backend's real challenge-response login (see techtown-payroll-backend ISSUES.md #27, also done).
 
 **Acceptance Criteria:**
-- [ ] Connecting a wallet results in `tt_token` being set
-- [ ] Subsequent API calls include the `Authorization` header
-- [ ] Disconnect clears the token
+- [x] Connecting a wallet results in `tt_token` being set
+- [x] Subsequent API calls include the `Authorization` header
+- [x] Disconnect clears the token
 
 ---
 
