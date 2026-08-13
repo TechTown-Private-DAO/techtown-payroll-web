@@ -5,7 +5,10 @@ import {
   isConnected as freighterIsConnected,
   getPublicKey,
   signTransaction,
+  signMessage,
 } from '@stellar/freighter-api'
+import { authApi } from '@/lib/api'
+import { toast } from '@/components/ui/use-toast'
 
 interface WalletContextType {
   isConnected: boolean
@@ -18,6 +21,12 @@ interface WalletContextType {
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
+
+function networkPassphrase(network: 'mainnet' | 'testnet') {
+  return network === 'testnet'
+    ? 'Test SDF Network ; September 2015'
+    : 'Public Global Stellar Network ; September 2015'
+}
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false)
@@ -45,19 +54,40 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     try {
       const connected = await freighterIsConnected()
       if (!connected) {
-        alert('Please install the Freighter wallet extension from https://freighter.app/')
+        toast({
+          title: 'Freighter not found',
+          description: 'Install the Freighter wallet extension from freighter.app to continue.',
+          variant: 'destructive',
+        })
         return
       }
       const pk = await getPublicKey()
+
+      // Prove key ownership: sign a one-time server-issued challenge, then
+      // exchange the signature for a session token.
+      const { message } = await authApi.challenge(pk)
+      const signResult = await signMessage(message, { networkPassphrase: networkPassphrase(network) })
+      // freighter-api's signMessage return shape has varied across versions
+      // (a plain base64 string vs. an object) — handle both defensively.
+      const signedMessage =
+        typeof signResult === 'string' ? signResult : (signResult as { signedMessage: string }).signedMessage
+      const auth = await authApi.login(pk, signedMessage, message)
+      localStorage.setItem('tt_token', auth.token)
+
       setAddress(pk)
       setIsConnected(true)
     } catch (err: any) {
       console.error('Wallet connect failed:', err)
-      alert('Failed to connect wallet. Please try again.')
+      toast({
+        title: 'Connection failed',
+        description: err?.message ?? 'Failed to connect wallet. Please try again.',
+        variant: 'destructive',
+      })
     }
-  }, [])
+  }, [network])
 
   const disconnect = useCallback(() => {
+    localStorage.removeItem('tt_token')
     setAddress(null)
     setIsConnected(false)
   }, [])
@@ -68,11 +98,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const signTx = useCallback(
     async (xdr: string) => {
-      const networkPassphrase =
-        network === 'testnet'
-          ? 'Test SDF Network ; September 2015'
-          : 'Public Global Stellar Network ; September 2015'
-      const result = await signTransaction(xdr, { networkPassphrase })
+      const result = await signTransaction(xdr, { networkPassphrase: networkPassphrase(network) })
       return result
     },
     [network],

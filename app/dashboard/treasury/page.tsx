@@ -40,7 +40,6 @@ export default function TreasuryPage() {
     try {
       await deposit.mutateAsync({
         token_address: tokenAddress,
-        from_address: address!,
         amount: Number(amount),
       })
       setAmount('')

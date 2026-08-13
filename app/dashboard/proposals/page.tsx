@@ -37,7 +37,6 @@ export default function ProposalsPage() {
     setFormError('')
     try {
       await create.mutateAsync({
-        proposer_address: address!,
         target_address: form.target_address,
         fn_name: form.fn_name,
         args: form.args,
@@ -161,7 +160,7 @@ export default function ProposalsPage() {
                           size="sm"
                           variant="outline"
                           disabled={approveProposal.isPending}
-                          onClick={() => approveProposal.mutate({ proposalId: p.id, approver_address: address })}
+                          onClick={() => approveProposal.mutate(p.id)}
                         >
                           <CheckCircle className="w-3 h-3 mr-1" />Vote
                         </Button>

@@ -87,9 +87,24 @@ export interface AuthResponse {
   expires_at: number
 }
 
+export interface ChallengeResponse {
+  message: string
+  expires_at: number
+}
+
 // ── auth ─────────────────────────────────────────────────────────────────────
 
 export const authApi = {
+  /**
+   * Request a one-time message for `wallet_address` to sign, proving key
+   * ownership before {@link authApi.login} will accept it.
+   *
+   * @param wallet_address - Stellar public key (G...) requesting a challenge.
+   * @returns The exact {@link ChallengeResponse.message} to sign, and its expiry.
+   * @throws {Error} If the wallet address is malformed or the request fails.
+   */
+  challenge: (wallet_address: string) =>
+    post<ChallengeResponse>('/api/auth/challenge', { wallet_address }),
   /**
    * Authenticate a wallet by verifying a signature over a challenge message.
    *
@@ -127,17 +142,17 @@ export const authApi = {
 
 export const daoApi = {
   /**
-   * Create a new DAO on the backend.
+   * Create a new DAO on the backend. The caller (from the bearer token)
+   * becomes the DAO's admin.
    *
    * @param name - Human-readable DAO name.
    * @param symbol - Short ticker symbol for the DAO.
-   * @param admin_address - Stellar public key (G...) of the admin/founder.
    * @param multisig_threshold - Number of approvals required for multi-sig actions.
    * @returns The created {@link DAO} record.
    * @throws {Error} If the request is malformed or the backend rejects it.
    */
-  create: (name: string, symbol: string, admin_address: string, multisig_threshold: number) =>
-    post<DAO>('/api/daos', { name, symbol, admin_address, multisig_threshold }),
+  create: (name: string, symbol: string, multisig_threshold: number) =>
+    post<DAO>('/api/daos', { name, symbol, multisig_threshold }),
   /**
    * Fetch a single DAO by its id.
    *
@@ -234,41 +249,40 @@ export const payrollApi = {
   create: (daoId: number, period: string, employee_ids: number[]) =>
     post<Payroll>(`/api/daos/${daoId}/payroll`, { period, employee_ids }),
   /**
-   * Submit a multi-sig approval for a pending payroll run.
+   * Submit a multi-sig approval for a pending payroll run, as the DAO admin
+   * identified by the bearer token.
    *
    * @param daoId - Numeric DAO identifier.
    * @param payrollId - Numeric payroll run identifier.
-   * @param approver_address - Stellar public key (G...) of the approver.
    * @returns The updated {@link Payroll} record.
-   * @throws {Error} If the run is not pending, the approver is unauthorized, or the request fails.
+   * @throws {Error} If the run is not pending, the caller is unauthorized, or the request fails.
    */
-  approve: (daoId: number, payrollId: number, approver_address: string) =>
-    post<Payroll>(`/api/daos/${daoId}/payroll/${payrollId}/approve`, { approver_address }),
+  approve: (daoId: number, payrollId: number) =>
+    post<Payroll>(`/api/daos/${daoId}/payroll/${payrollId}/approve`, {}),
   /**
-   * Execute an approved payroll run on-chain.
+   * Execute an approved payroll run on-chain, as the DAO admin identified by
+   * the bearer token.
    *
    * @param daoId - Numeric DAO identifier.
    * @param payrollId - Numeric payroll run identifier.
-   * @param executor_address - Stellar public key (G...) of the executor.
    * @returns The updated {@link Payroll} record (status `executed`).
    * @throws {Error} If the run is not approved, the threshold isn't met, or the request fails.
    */
-  execute: (daoId: number, payrollId: number, executor_address: string) =>
-    post<Payroll>(`/api/daos/${daoId}/payroll/${payrollId}/execute`, { executor_address }),
+  execute: (daoId: number, payrollId: number) =>
+    post<Payroll>(`/api/daos/${daoId}/payroll/${payrollId}/execute`, {}),
   /**
-   * Claim a payout from an executed payroll run as an employee.
+   * Claim a payout from an executed payroll run, as the employee identified
+   * by the bearer token.
    *
    * @param daoId - Numeric DAO identifier.
    * @param payrollId - Numeric payroll run identifier.
    * @param employee_id - Numeric id of the claiming employee.
-   * @param employee_address - Stellar public key (G...) of the claiming employee.
    * @returns `{ success: true }` on success.
-   * @throws {Error} If the run isn't executed, the employee isn't eligible, or the request fails.
+   * @throws {Error} If the run isn't executed, the caller isn't eligible, or the request fails.
    */
-  claim: (daoId: number, payrollId: number, employee_id: number, employee_address: string) =>
+  claim: (daoId: number, payrollId: number, employee_id: number) =>
     post<{ success: boolean }>(`/api/daos/${daoId}/payroll/${payrollId}/claim`, {
       employee_id,
-      employee_address,
     }),
 }
 
@@ -284,19 +298,18 @@ export const treasuryApi = {
    */
   balance: (daoId: number) => get<{ balance: number }>(`/api/daos/${daoId}/treasury/balance`),
   /**
-   * Deposit tokens into the DAO treasury.
+   * Deposit tokens into the DAO treasury, funded by the wallet identified by
+   * the bearer token.
    *
    * @param daoId - Numeric DAO identifier.
    * @param token_address - Stellar asset/contract address being deposited.
-   * @param from_address - Stellar public key (G...) funding the deposit.
    * @param amount - Amount of tokens to deposit (integer).
    * @returns `{ success: true }` on success.
    * @throws {Error} If the deposit is rejected or the request fails.
    */
-  deposit: (daoId: number, token_address: string, from_address: string, amount: number) =>
+  deposit: (daoId: number, token_address: string, amount: number) =>
     post<{ success: boolean }>(`/api/daos/${daoId}/treasury/deposit`, {
       token_address,
-      from_address,
       amount,
     }),
 }
@@ -313,32 +326,31 @@ export const proposalApi = {
    */
   list: (daoId: number) => get<Proposal[]>(`/api/daos/${daoId}/proposals`),
   /**
-   * Create a new multi-sig governance proposal.
+   * Create a new multi-sig governance proposal, proposed by the wallet
+   * identified by the bearer token.
    *
    * @param daoId - Numeric DAO identifier.
-   * @param proposer_address - Stellar public key (G...) of the proposer.
    * @param target_address - Stellar address the proposal targets.
    * @param fn_name - Name of the contract function to invoke.
    * @param args - Stringified argument payload for the function.
    * @returns The created {@link Proposal} record.
    * @throws {Error} If validation fails or the backend rejects the proposal.
    */
-  create: (daoId: number, proposer_address: string, target_address: string, fn_name: string, args: string) =>
+  create: (daoId: number, target_address: string, fn_name: string, args: string) =>
     post<Proposal>(`/api/daos/${daoId}/proposals`, {
-      proposer_address,
       target_address,
       function: fn_name,
       args,
     }),
   /**
-   * Submit a multi-sig approval for a governance proposal.
+   * Submit a multi-sig approval for a governance proposal, as the wallet
+   * identified by the bearer token.
    *
    * @param daoId - Numeric DAO identifier.
    * @param proposalId - Numeric proposal identifier.
-   * @param approver_address - Stellar public key (G...) of the approver.
    * @returns `{ success: true }` on success.
-   * @throws {Error} If the proposal isn't active, the approver is unauthorized, or the request fails.
+   * @throws {Error} If the proposal isn't active, the caller is unauthorized, or the request fails.
    */
-  approve: (daoId: number, proposalId: number, approver_address: string) =>
-    post<{ success: boolean }>(`/api/daos/${daoId}/proposals/${proposalId}/approve`, { approver_address }),
+  approve: (daoId: number, proposalId: number) =>
+    post<{ success: boolean }>(`/api/daos/${daoId}/proposals/${proposalId}/approve`, {}),
 }

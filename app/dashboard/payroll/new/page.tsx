@@ -108,7 +108,7 @@ export default function PayrollPage() {
                             size="sm"
                             variant="outline"
                             disabled={approve.isPending}
-                            onClick={() => approve.mutate({ payrollId: p.id, approver_address: address })}
+                            onClick={() => approve.mutate(p.id)}
                           >
                             {approve.isPending ? <Loader2 className="animate-spin w-3 h-3" /> : 'Approve'}
                           </Button>
@@ -117,7 +117,7 @@ export default function PayrollPage() {
                           <Button
                             size="sm"
                             disabled={execute.isPending}
-                            onClick={() => execute.mutate({ payrollId: p.id, executor_address: address })}
+                            onClick={() => execute.mutate(p.id)}
                           >
                             {execute.isPending ? <Loader2 className="animate-spin w-3 h-3" /> : 'Execute'}
                           </Button>

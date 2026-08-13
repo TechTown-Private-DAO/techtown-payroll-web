@@ -18,9 +18,9 @@ export function useCreateDAO() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({
-      name, symbol, admin_address, multisig_threshold,
-    }: { name: string; symbol: string; admin_address: string; multisig_threshold: number }) =>
-      daoApi.create(name, symbol, admin_address, multisig_threshold),
+      name, symbol, multisig_threshold,
+    }: { name: string; symbol: string; multisig_threshold: number }) =>
+      daoApi.create(name, symbol, multisig_threshold),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['dao'] }),
   })
 }
@@ -92,8 +92,7 @@ export function useCreatePayroll(daoId: number) {
 export function useApprovePayroll(daoId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ payrollId, approver_address }: { payrollId: number; approver_address: string }) =>
-      payrollApi.approve(daoId, payrollId, approver_address),
+    mutationFn: (payrollId: number) => payrollApi.approve(daoId, payrollId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payrolls', daoId] }),
   })
 }
@@ -101,8 +100,7 @@ export function useApprovePayroll(daoId: number) {
 export function useExecutePayroll(daoId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ payrollId, executor_address }: { payrollId: number; executor_address: string }) =>
-      payrollApi.execute(daoId, payrollId, executor_address),
+    mutationFn: (payrollId: number) => payrollApi.execute(daoId, payrollId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payrolls', daoId] }),
   })
 }
@@ -121,9 +119,9 @@ export function useDeposit(daoId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({
-      token_address, from_address, amount,
-    }: { token_address: string; from_address: string; amount: number }) =>
-      treasuryApi.deposit(daoId, token_address, from_address, amount),
+      token_address, amount,
+    }: { token_address: string; amount: number }) =>
+      treasuryApi.deposit(daoId, token_address, amount),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['treasury', daoId] }),
   })
 }
@@ -142,9 +140,9 @@ export function useCreateProposal(daoId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({
-      proposer_address, target_address, fn_name, args,
-    }: { proposer_address: string; target_address: string; fn_name: string; args: string }) =>
-      proposalApi.create(daoId, proposer_address, target_address, fn_name, args),
+      target_address, fn_name, args,
+    }: { target_address: string; fn_name: string; args: string }) =>
+      proposalApi.create(daoId, target_address, fn_name, args),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['proposals', daoId] }),
   })
 }
@@ -152,8 +150,7 @@ export function useCreateProposal(daoId: number) {
 export function useApproveProposal(daoId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ proposalId, approver_address }: { proposalId: number; approver_address: string }) =>
-      proposalApi.approve(daoId, proposalId, approver_address),
+    mutationFn: (proposalId: number) => proposalApi.approve(daoId, proposalId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['proposals', daoId] }),
   })
 }
